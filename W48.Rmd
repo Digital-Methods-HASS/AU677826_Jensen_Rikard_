@@ -1,0 +1,147 @@
+---
+title: "W49"
+author: "Rikard"
+date: "7/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#Task 1 Create a Danish equivalent of AUSmap with esri layers
+
+# I used this code to create the map 
+leaflet() %>%
+  addTiles() %>%                              # add default OpenStreetMap map tiles
+  addProviderTiles("Esri.WorldImagery",       # add custom Esri World Physical map tiles
+                   options = providerTileOptions(opacity=0.5)) %>%     # make the Esri tile transparent
+  setView(lng = 10.2006629, lat = 56.1526468, zoom = 10)              # set the location of the map 
+
+l_DKMAP <- leaflet() %>%   # assign the base location to an object
+  setView(10.2006629, 56.1526468, zoom = 13)
+
+for (provider in esri) {
+  l_DKMAP <- l_DKMAP %>% addProviderTiles(provider, group = provider)
+}
+
+
+Danmark <- l_DKMAP %>% addLayersControl(baseGroups = names(esri),
+                   options = layersControlOptions(collapsed = FALSE)) %>%
+  addMiniMap(tiles = esri[[1]], toggleDisplay = TRUE,
+             position = "bottomright") %>%
+    addMeasure(
+    position = "bottomleft",
+    primaryLengthUnit = "meters",
+    primaryAreaUnit = "sqmeters",
+    activeColor = "#3D535D",
+    completedColor = "#7D4479") %>% 
+  htmlwidgets::onRender("
+                        function(el, x) {
+                        var myMap = this;
+                        myMap.on('baselayerchange',
+                        function (e) {
+                        myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
+                        })
+                        }") %>% 
+  addControl("", position = "topright")
+Danmark
+   
+#task 2.1  Read in the googlesheet data you and your colleagues 
+
+#I run the liberary 
+library(tidyverse)
+library(googlesheets4)
+library(leaflet)
+
+# and the Google sheet
+places <- read_sheet("https://docs.google.com/spreadsheets/d/1PlxsPElZML8LZKyXbqdAYeQCDIvDps2McZx1cTVWSzI/edit#gid=124710918",
+                     col_types = "cccnncnc")
+glimpse(places)
+
+gs4_deauth() #fejerne fejl 
+
+# I load the coordinates in the map
+leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(lng = places$Longitude, 
+             lat = places$Latitude,
+             popup = places$Description)
+#task 2.2 populated with data into the DANmap object you created in Task 1.
+leaflet() %>%
+  addTiles() %>%                              # add default OpenStreetMap map tiles
+  addProviderTiles("Esri.WorldImagery",       # add custom Esri World Physical map tiles
+                   options = providerTileOptions(opacity=0.5)) %>%     # make the Esri tile transparent
+  setView(lng = 10.2006629, lat = 56.1526468, zoom = 10)              # set the location of the map 
+
+l_DKMAP <- leaflet() %>%   # assign the base location to an object
+  setView(10.2006629, 56.1526468, zoom = 13)
+
+for (provider in esri) {
+  l_DKMAP <- l_DKMAP %>% addProviderTiles(provider, group = provider)
+}
+
+
+Danmark <- l_DKMAP %>% addLayersControl(baseGroups = names(esri),
+                                        options = layersControlOptions(collapsed = FALSE)) %>%
+  addMiniMap(tiles = esri[[1]], toggleDisplay = TRUE,
+             position = "bottomright") %>%
+  addMarkers(places,lat = places$Latitude, lng = places$Longitude) %>% 
+  addMeasure(
+    position = "bottomleft",
+    primaryLengthUnit = "meters",
+    primaryAreaUnit = "sqmeters",
+    activeColor = "#3D535D",
+    completedColor = "#7D4479") %>% 
+  htmlwidgets::onRender("
+                        function(el, x) {
+                        var myMap = this;
+                        myMap.on('baselayerchange',
+                        function (e) {
+                        myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
+                        })
+                        }") %>% 
+  addControl("", position = "topright")
+Danmark
+
+#task3 Can you cluster the points in Leaflet? Google "clustering options in Leaflet"
+
+#I run this code to cluster [and to display the notes in task 5]
+
+%>% 
+  leaflet() %>%
+  addTiles() %>% 
+  addMarkers(lng = places$Longitude, 
+             lat = places$Latitude,
+             popup = paste("<strong>Type: </strong>",places$Type,"<br><strong>descripition : </strong>",places$Description),
+             clusterOptions = markerClusterOptions())
+#Task4 Look at the map and consider what it is good for and what not.
+
+#It looks more clean, and the pionts are more esay tro find. the bad thigs is that you can not see the specfics things in aarhus but its just says there are 5 things in aarhus.
+
+#task 5 Find out how to display notes and classifications in the map.
+
+#to get more into the popup is write  popup = paste("<strong>Type: </strong>",places$Type,"<br><strong>descripition : </strong>",places$Description)) 
+
+#see the code in task 3 
+
